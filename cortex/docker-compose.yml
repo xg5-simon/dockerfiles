@@ -1,0 +1,37 @@
+version: "3.7"
+services:
+  elasticsearch:
+    image: elasticsearch:7.9.1
+    restart: unless-stopped
+    environment:
+      - http.host=0.0.0.0
+      - discovery.type=single-node
+      - script.allowed_types=inline
+      - thread_pool.search.queue_size=100000
+      - thread_pool.write.queue_size=10000
+    volumes:
+      - elasticsearchdata:/usr/share/elasticsearch/data
+    networks:
+      - DART_NET
+  cortex.dart:
+    image: thehiveproject/cortex:latest
+    restart: unless-stopped
+    environment:
+      - job_directory=/tmp/cortex-jobs
+      - docker_job_directory=/var/run/cortex/jobs
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/cortex-jobs:/tmp/cortex-jobs
+      - ./cortex/logs:/opt/cortex/logs
+      - ./cortex/conf:/opt/cortex/conf/application.conf
+    depends_on:
+      - elasticsearch
+    ports:
+      - "0.0.0.0:9001:9001"
+    networks:
+      - TARSONIS
+volumes:
+  elasticsearchdata:
+networks:
+  TARSONIS:
+    driver: bridge
