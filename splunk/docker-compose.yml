@@ -1,0 +1,33 @@
+version: '3.7'
+services:
+  splunkenterprise:
+    image: splunk/splunk
+    container_name: splunk
+    hostname: splunk
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '1'
+          memory: 512M
+    environment:
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_PASSWORD=
+      - SPLUNK_UPGRADE=true
+    volumes:
+      - ./splunk_addons/Splunk_TA_windows:/opt/splunk/etc/apps/Splunk_TA_windows
+      - ./splunk_addons/Splunk_TA_o365:/opt/splunk/etc/apps/Splunk_TA_o365
+      - ./splunk_addons/Splunk_TA_microsoft-cloudservices:/opt/splunk/etc/apps/Splunk_TA_microsoft-cloudservices
+      - ./splunk_addons/Splunk_TA_microsoft-azure:/opt/splunk/etc/apps/Splunk_TA_microsoft-azure
+      - ./splunk_addons/TA-microsoft-sysmon:/opt/splunk/etc/apps/TA-microsoft-sysmon
+    ports:
+      - "8000:8000"
+      - "8089:8089"
+    networks:
+      - TARSONIS
+networks:
+  TARSONIS:
+    external: true
+    name: TARSONIS
