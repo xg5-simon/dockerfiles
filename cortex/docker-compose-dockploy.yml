@@ -1,0 +1,64 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.29
+    # container_name: cortex-elasticsearch
+    environment:
+      - http.host=0.0.0.0
+      - discovery.type=single-node
+      - script.allowed_types=inline
+      - thread_pool.search.queue_size=100000
+      - thread_pool.write.queue_size=10000
+      - ES_JAVA_OPTS=-Xms256m -Xmx256m
+      - xpack.security.enabled=false
+      - bootstrap.memory_lock=false
+    volumes:
+      - elasticsearchdata:/usr/share/elasticsearch/data
+    networks:
+      - cortex-net
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:9200
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  cortex:
+    image: thehiveproject/cortex:latest
+    # container_name: cortex-app
+    environment:
+      - 'job_directory=${job_directory}'
+      - search_host=elasticsearch
+      - search_port=9200
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - '${job_directory}:${job_directory}'
+    # - cortex-config:/etc/cortex
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - 9001:9001
+    networks:
+      - cortex-net
+      - dokploy-network
+    labels:
+      # example allow list with traefik
+      # - traefik.enable=true
+      # - traefik.http.middlewares.ip-allow.ipallowlist.sourcerange=<allowed subnets>
+      # - traefik.http.routers.rdapapi-rdapapicortex-tnzkvw.middlewares=ip-allow
+      # - traefik.http.routers.rdapapi-rdapapicortex-tnzkvw-4-web.middlewares=ip-allow
+      # - traefik.http.routers.rdapapi-rdapapicortex-tnzkvw-4-websecure.middlewares=ip-allow
+volumes:
+  elasticsearchdata:
+    driver: local
+  cortex-jobs:
+    driver: local
+  cortex-config:
+    driver: local
+networks:
+  cortex-net:
+    driver: bridge
+  dokploy-network:
+    external: true
